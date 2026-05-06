@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Soft Cyan Countdown</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e293b;
+      --panel: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.09);
+      --dot-on: #7dd3fc;
+      --dot-off: rgba(255,255,255,0.05);
+      --text: rgba(255,255,255,0.65);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, #1d4ed8 0%, transparent 35%),
+        radial-gradient(circle at bottom right, #0891b2 0%, transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .banner {
+      width: min(900px, 100%);
+      background: rgba(15, 23, 42, 0.68);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.20);
+    }
+
+    .ticker {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .ticker::-webkit-scrollbar { display: none; }
+
+    .group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .digits {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      min-height: 26px;
+    }
+
+    .digit {
+      display: grid;
+      grid-template-columns: repeat(5, 3px);
+      grid-template-rows: repeat(7, 3px);
+      gap: 1.5px;
+      padding: 2px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.045);
+      border-radius: 5px;
+    }
+
+    .dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--dot-off);
+      box-shadow: none;
+    }
+
+    .dot.on {
+      background: var(--dot-on);
+      box-shadow:
+        0 0 2px rgba(125, 211, 252, 0.75),
+        0 0 4px rgba(125, 211, 252, 0.28);
+    }
+
+    .label {
+      font-size: 0.45rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .sep {
+      color: rgba(255,255,255,0.25);
+      font-size: 0.7rem;
+      margin: 0;
+      transform: translateY(-3px);
+      user-select: none;
+    }
+
+    .done {
+      display: none;
+      text-align: center;
+      color: #7dd3fc;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 0 0;
+    }
+
+    @media (max-width: 720px) {
+      .ticker {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    <div class="ticker" id="ticker">
+      <div class="group">
+        <div class="digits" id="months"></div>
+        <div class="label">Months</div>
+      </div>
+      <div class="sep">•</div>
+      <div class="group">
+        <div class="digits" id="weeks"></div>
+        <div class="label">Weeks</div>
+      </div>
+      <div class="sep">•</div>
+      <div class="group">
+        <div class="digits" id="days"></div>
+        <div class="label">Days</div>
+      </div>
+      <div class="sep">•</div>
+      <div class="group">
+        <div class="digits" id="hours"></div>
+        <div class="label">Hours</div>
+      </div>
+      <div class="sep">•</div>
+      <div class="group">
+        <div class="digits" id="minutes"></div>
+        <div class="label">Minutes</div>
+      </div>
+      <div class="sep">•</div>
+      <div class="group">
+        <div class="digits" id="seconds"></div>
+        <div class="label">Seconds</div>
+      </div>
+    </div>
+    <div class="done" id="doneMessage">Done</div>
+  </div>
+
+  <script>
+    const target = new Date("2026-09-14T00:00:00-05:00");
+
+    const DIGITS = {
+      "0": ["01110","10001","10011","10101","11001","10001","01110"],
+      "1": ["00100","01100","00100","00100","00100","00100","01110"],
+      "2": ["01110","10001","00001","00010","00100","01000","11111"],
+      "3": ["11110","00001","00001","01110","00001","00001","11110"],
+      "4": ["00010","00110","01010","10010","11111","00010","00010"],
+      "5": ["11111","10000","10000","11110","00001","00001","11110"],
+      "6": ["01110","10000","10000","11110","10001","10001","01110"],
+      "7": ["11111","00001","00010","00100","01000","01000","01000"],
+      "8": ["01110","10001","10001","01110","10001","10001","01110"],
+      "9": ["01110","10001","10001","01111","00001","00001","01110"]
+    };
+
+    function addMonths(date, months) {
+      const d = new Date(date.getTime());
+      const day = d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + months);
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(day, lastDay));
+      return d;
+    }
+
+    function getDiffParts(now, targetDate) {
+      if (now >= targetDate) {
+        return { months: 0, weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, done: true };
+      }
+
+      let cursor = new Date(now.getTime());
+      let months = 0;
+
+      while (true) {
+        const next = addMonths(cursor, 1);
+        if (next <= targetDate) {
+          months++;
+          cursor = next;
+        } else {
+          break;
+        }
+      }
+
+      let remainingMs = targetDate - cursor;
+      const msPerSecond = 1000;
+      const msPerMinute = msPerSecond * 60;
+      const msPerHour = msPerMinute * 60;
+      const msPerDay = msPerHour * 24;
+      const msPerWeek = msPerDay * 7;
+
+      const weeks = Math.floor(remainingMs / msPerWeek);
+      remainingMs -= weeks * msPerWeek;
+
+      const days = Math.floor(remainingMs / msPerDay);
+      remainingMs -= days * msPerDay;
+
+      const hours = Math.floor(remainingMs / msPerHour);
+      remainingMs -= hours * msPerHour;
+
+      const minutes = Math.floor(remainingMs / msPerMinute);
+      remainingMs -= minutes * msPerMinute;
+
+      const seconds = Math.floor(remainingMs / msPerSecond);
+
+      return { months, weeks, days, hours, minutes, seconds, done: false };
+    }
+
+    function buildDigit(char) {
+      const pattern = DIGITS[char] || DIGITS["0"];
+      const digit = document.createElement("div");
+      digit.className = "digit";
+
+      for (let row = 0; row < pattern.length; row++) {
+        for (let col = 0; col < pattern[row].length; col++) {
+          const dot = document.createElement("div");
+          dot.className = "dot" + (pattern[row][col] === "1" ? " on" : "");
+          digit.appendChild(dot);
+        }
+      }
+      return digit;
+    }
+
+    function renderNumber(containerId, value, minDigits = 2) {
+      const container = document.getElementById(containerId);
+      const str = String(value).padStart(minDigits, "0");
+      container.innerHTML = "";
+      for (const ch of str) {
+        container.appendChild(buildDigit(ch));
+      }
+    }
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = getDiffParts(now, target);
+
+      renderNumber("months", diff.months, 2);
+      renderNumber("weeks", diff.weeks, 2);
+      renderNumber("days", diff.days, 2);
+      renderNumber("hours", diff.hours, 2);
+      renderNumber("minutes", diff.minutes, 2);
+      renderNumber("seconds", diff.seconds, 2);
+
+      document.getElementById("doneMessage").style.display = diff.done ? "block" : "none";
+      document.getElementById("ticker").style.display = diff.done ? "none" : "flex";
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  </script>
+</body>
+</html>
