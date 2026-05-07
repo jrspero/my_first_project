@@ -21,6 +21,7 @@
       margin: 0;
       min-height: 100vh;
       font-family: Arial, Helvetica, sans-serif;
+      background-color: #0f172a;
       background:
         radial-gradient(circle at top left, #1d4ed8 0%, transparent 35%),
         radial-gradient(circle at bottom right, #0891b2 0%, transparent 30%),
@@ -49,7 +50,54 @@
       text-transform: uppercase;
       margin-bottom: 10px;
       user-select: none;
+      cursor: pointer;
     }
+
+    .title:hover { opacity: 0.75; }
+
+    .date-editor {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .date-editor input[type="datetime-local"] {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 6px;
+      color: #c7d2fe;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      outline: none;
+      cursor: pointer;
+      color-scheme: dark;
+    }
+
+    .date-editor input[type="datetime-local"]:focus {
+      border-color: #7dd3fc;
+    }
+
+    .date-editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .date-editor button {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer;
+      background: rgba(255,255,255,0.07);
+      color: #c7d2fe;
+    }
+
+    .date-editor button:hover { background: rgba(255,255,255,0.13); }
+    .date-editor button.confirm { border-color: #7dd3fc; color: #7dd3fc; }
 
     .ticker {
       display: flex;
@@ -139,7 +187,14 @@
 </head>
 <body>
   <div class="banner">
-    <div class="title">Independance Day</div>
+    <div class="title" id="titleLabel" title="Click to change date">Independance Day</div>
+    <div class="date-editor" id="dateEditor">
+      <input type="datetime-local" id="dateInput" />
+      <div class="date-editor-actions">
+        <button class="confirm" id="dateConfirm">Set</button>
+        <button id="dateCancel">Cancel</button>
+      </div>
+    </div>
     <div class="ticker" id="ticker">
       <div class="group">
         <div class="digits" id="months"></div>
@@ -175,7 +230,7 @@
   </div>
 
   <script>
-    const target = new Date("2026-09-14T00:00:00-05:00");
+    let target = new Date("2026-09-14T00:00:00-05:00");
 
     const DIGITS = {
       "0": ["01110","10001","10011","10101","11001","10001","01110"],
@@ -283,6 +338,38 @@
 
     updateCountdown();
     setInterval(updateCountdown, 1000);
+
+    const titleLabel = document.getElementById("titleLabel");
+    const dateEditor = document.getElementById("dateEditor");
+    const dateInput = document.getElementById("dateInput");
+    const dateConfirm = document.getElementById("dateConfirm");
+    const dateCancel = document.getElementById("dateCancel");
+
+    function toLocalDatetimeValue(date) {
+      const pad = n => String(n).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    titleLabel.addEventListener("click", () => {
+      dateInput.value = toLocalDatetimeValue(target);
+      dateEditor.style.display = "flex";
+      titleLabel.style.display = "none";
+    });
+
+    dateConfirm.addEventListener("click", () => {
+      const val = dateInput.value;
+      if (val) {
+        target = new Date(val);
+        updateCountdown();
+      }
+      dateEditor.style.display = "none";
+      titleLabel.style.display = "";
+    });
+
+    dateCancel.addEventListener("click", () => {
+      dateEditor.style.display = "none";
+      titleLabel.style.display = "";
+    });
   </script>
 </body>
 </html>
